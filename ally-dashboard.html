@@ -5,17 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ally — Founder's Compass Dashboard</title>
 <!--
-  Ally / GoXL — Dashboard (Founder's Compass) — standalone HTML export.
+  Ally / GoXL — Dashboard (Founder's Compass) + Your Vision — standalone export.
   Source: ally-platform/frontend
-    markup   · src/pages/Dashboard.jsx + src/layouts/PlatformLayout.jsx
+    markup   · src/pages/Dashboard.jsx, src/pages/VisionPage.jsx,
+               src/layouts/PlatformLayout.jsx
     styles   · src/styles/tokens.css, platform.css, dashboard-compass.css,
-               onboarding-questions.css, tour.css  (copied verbatim)
-    behaviour· src/components/{Modal,StarRating,FeedbackPrompt,ProductTour}.jsx
-               and PlatformLayout's sidebar/notification logic, rewritten in
-               plain JS at the bottom of this file.
-  Routing and API calls are the two things one file cannot have, so anything
-  that would navigate or POST reports what it would do in the app's own toast.
-  No app source was modified.
+               onboarding-questions.css, tour.css, vision.css (copied verbatim)
+               + the @theme custom properties from src/index.css
+    behaviour· src/components/{Modal,StarRating,FeedbackPrompt,ProductTour}.jsx,
+               src/services/vision.js and PlatformLayout's sidebar/notification
+               logic, rewritten in plain JS at the bottom of this file.
+  Routing and API calls are the two things one file cannot have. The dashboard
+  and Your Vision are both here and switch for real; every other route reports
+  where it would go through the app's own toast. No app source was modified.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,6 +45,7 @@ a { color: inherit; text-decoration: none; }
 :focus { outline: none; }
 :focus-visible { outline: 2.5px solid var(--emerald-bright); outline-offset: 3px; border-radius: 8px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+[hidden] { display: none !important; }
 h1,h2,h3,h4,p,dl,dd,ol,ul,figure { margin: 0; }
 ol, ul { list-style: none; padding: 0; }
 
@@ -122,6 +125,52 @@ ol, ul { list-style: none; padding: 0; }
   --micro: cubic-bezier(.34,1.4,.5,1);
   --ease: cubic-bezier(.22,1,.3,1);
   --ease-spring: cubic-bezier(.34,1.4,.5,1);
+}
+
+/* ───────── the @theme names from src/index.css, as plain custom properties
+   (Tailwind generates these in the app; vision.css and friends read them) ───────── */
+:root {
+  /* ── Ivory palette ── */
+  --color-ivory: #f7f1eb;
+  --color-ivory-2: #fbf7f2;
+  --color-ivory-3: #efe6d9;
+  --color-sand: #efe4d2;
+  --color-sand-2: #e3d5bf;
+  /* ── Forest palette ── */
+  --color-forest: #1B4332;
+  --color-forest-2: #143726;
+  --color-forest-3: #0b2418;
+  --color-forest-deep: #0E2A1C;
+  --color-forest-deep-2: #0a2016;
+  --color-forest-night: #06140d;
+  /* ── Emerald palette ── */
+  --color-emerald: #10B981;
+  --color-emerald-bright: #34d399;
+  --color-emerald-glow: #5eead4;
+  --color-emerald-dark: #0c7a54;
+  /* ── Accent ── */
+  --color-lime-edge: #A8D94A;
+  --color-clay: #b7895f;
+  /* ── Ink / muted ── */
+  --color-ink: #16241c;
+  --color-muted: #556458;
+  --color-muted-2: #6c7a70;
+  --color-moss: #3a5f47;
+  /* ── Borders ── */
+  --color-bd: #e7e0d6;
+  --color-bd-2: #d8cfc2;
+  /* ── On-dark text ── */
+  --color-on-dark: #eaf3ee;
+  --color-on-dark-muted: #a7c0b4;
+  --color-on-dark-dim: #7d9488;
+  /* ── Lines ── */
+  --color-line: rgba(255,255,255,.08);
+  --color-line-2: rgba(255,255,255,.13);
+  /* ── Fonts ── self-hosted variable faces first (see main.jsx @fontsource
+     imports); plain names kept as graceful fallback; then generic. ── */
+  --font-display: 'Montserrat Variable', 'Montserrat', 'Inter Tight Variable', 'Inter Tight', system-ui, sans-serif;
+  --font-body: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --font-serif: 'Fraunces Variable', 'Fraunces', 'Georgia', serif;
 }
 
 /* ───────── src/styles/platform.css ───────── */
@@ -3103,6 +3152,188 @@ button.ac-pcard {
 @media(max-width:560px){ .tour-pop{width:calc(100vw - 28px)} }
 @media(prefers-reduced-motion:reduce){ .tour-spot,.tour-pop{transition:opacity .2s} }
 
+/* ───────── src/styles/vision.css ───────── */
+/* Your Vision — long-term founder vision, six territories + a vision/current/
+   gap summary. Frontend-only (services/vision.js), so nothing here reads
+   from a report or renders a number nobody entered. */
+
+.vis-page { padding: 18px 24px 64px; max-width: 1240px; margin: 0 auto; }
+
+.vis-head { margin-bottom: 22px; }
+.vis-kicker { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--color-emerald, #10B981); margin-bottom: 8px; }
+.vis-head h1 { font-family: var(--font-display); font-size: clamp(26px, 3.2vw, 38px); line-height: 1.08; letter-spacing: -.02em; color: var(--color-forest, #1B4332); margin: 0 0 10px; }
+.vis-sub { font-size: 13.5px; line-height: 1.6; color: var(--color-muted-2, #6c7a70); max-width: 62ch; margin: 0 0 18px; }
+.vis-head-acts { display: flex; gap: 10px; flex-wrap: wrap; }
+.vis-head-acts .btn svg { width: 15px; height: 15px; }
+
+.vt-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+@media (max-width: 1000px) { .vt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .vt-grid { grid-template-columns: 1fr; } }
+
+.vt-card {
+  border-radius: 18px;
+  border: 1px solid var(--color-bd, #e7e0d6);
+  background: linear-gradient(150deg, #fff, var(--color-ivory-2, #fbf7f2));
+  display: flex;
+  flex-direction: column;
+  transition: .2s cubic-bezier(.2,.7,.2,1);
+  overflow: hidden;
+}
+.vt-card:hover { transform: translateY(-2px); border-color: rgba(16,185,129,.4); box-shadow: 0 1px 2px -1px rgba(6,20,13,.14), 0 6px 16px -6px rgba(6,20,13,.18); }
+.vt-card.is-empty { border-style: dashed; background: var(--color-ivory-2, #fbf7f2); }
+
+.vt-card-body {
+  text-align: left;
+  min-height: 150px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  cursor: pointer;
+  background: none;
+}
+
+/* Per-card "talk to Ally about this one" -- a footer strip, separate from
+   the edit surface above it so the two actions don't fight for the same
+   click. Always visible rather than hover-revealed, so it's just as
+   discoverable on touch as on desktop. */
+.vt-talk {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 12px; font-size: 11.5px; font-weight: 700; color: #0b6a52;
+  background: rgba(16,185,129,.07); border: none; border-top: 1px solid var(--color-bd, #e7e0d6);
+  cursor: pointer;
+}
+.vt-talk svg { width: 13px; height: 13px; }
+.vt-talk:hover { background: rgba(16,185,129,.14); }
+
+.vt-top { display: flex; align-items: center; gap: 8px; }
+.vt-ic { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: rgba(16,185,129,.12); color: #0b6a52; flex-shrink: 0; }
+.vt-ic svg { width: 14px; height: 14px; }
+.vt-label { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; color: var(--color-muted-2, #6c7a70); flex: 1; }
+.vt-edit-ic { width: 14px; height: 14px; color: var(--color-muted-2, #8a958b); flex-shrink: 0; }
+
+.vt-placeholder { font-size: 13px; line-height: 1.55; color: var(--color-muted-2, #8a958b); margin: 14px 0 auto; }
+.vt-add { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; font-size: 12px; font-weight: 700; color: #0b6a52; }
+.vt-add svg { width: 14px; height: 14px; }
+
+.vt-statement { font-family: var(--font-display); font-size: 17px; line-height: 1.32; letter-spacing: -.01em; color: var(--color-forest, #1B4332); margin: 12px 0 auto; }
+.vt-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 14px; }
+.vt-tag { font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 999px; background: rgba(16,185,129,.1); color: #0b6a52; }
+.vt-tag.muted { background: rgba(0,0,0,.05); color: var(--color-muted-2, #6c7a70); }
+
+/* Territory editor (inside Modal) */
+.vt-editor { display: flex; flex-direction: column; gap: 14px; }
+.vt-field { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; font-weight: 700; color: var(--color-forest, #1B4332); }
+.vt-field input, .vt-field textarea {
+  font: inherit; font-weight: 500; font-size: 13.5px; padding: 10px 12px;
+  border-radius: 10px; border: 1px solid var(--color-bd, #e7e0d6); background: #fff; color: var(--color-ink, #16241c);
+  resize: vertical;
+}
+.vt-field input:focus, .vt-field textarea:focus { outline: 2px solid rgba(16,185,129,.4); outline-offset: 1px; }
+.vt-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .vt-field-row { grid-template-columns: 1fr; } }
+.vt-editor-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+
+/* Vision / Current / Gap summary strip */
+.vis-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 720px) { .vis-summary { grid-template-columns: 1fr; } }
+.vis-sum-box {
+  padding: 20px 22px; border-radius: 18px; border: 1px solid var(--color-bd, #e7e0d6);
+  background: linear-gradient(150deg, #fff, var(--color-ivory-2, #fbf7f2));
+  display: flex; flex-direction: column; gap: 6px;
+}
+.vis-sum-box.gap { background: radial-gradient(120% 140% at 100% 0%, #164a32, var(--color-forest-deep, #0E2A1C) 65%); border-color: transparent; color: #fff; }
+.vis-sum-label { font-size: 10.5px; font-weight: 800; letter-spacing: .12em; }
+.vis-sum-box:not(.gap) .vis-sum-label { color: var(--color-muted-2, #6c7a70); }
+.vis-sum-box.gap .vis-sum-label { color: #34d399; }
+.vis-sum-value, .vis-sum-value-input {
+  font-family: var(--font-display); font-size: 30px; font-weight: 800; letter-spacing: -.02em;
+}
+.vis-sum-box:not(.gap) .vis-sum-value-input { color: var(--color-forest, #1B4332); }
+.vis-sum-box.gap .vis-sum-value { color: #fff; }
+.vis-sum-value-input {
+  border: none; background: transparent; padding: 0; width: 100%;
+}
+.vis-sum-value-input:focus { outline: none; }
+.vis-sum-value-input::placeholder { color: var(--color-muted-2, #b7c2b9); font-weight: 700; }
+.vis-sum-sub { font-size: 12px; }
+.vis-sum-box:not(.gap) .vis-sum-sub { color: var(--color-muted-2, #8a958b); }
+.vis-sum-box.gap .vis-sum-sub { color: #a7c0b4; }
+.vis-sum-sub-input {
+  font: inherit; font-size: 12px; color: var(--color-muted-2, #8a958b); border: none; background: transparent; padding: 0; width: 100%;
+}
+.vis-sum-sub-input:focus { outline: none; }
+.vis-sum-sub-input::placeholder { color: var(--color-muted-2, #b7c2b9); }
+
+/* ---- territory picture -------------------------------------------------
+   Optional throughout. A vision is words first, so nothing here changes the
+   shape of a card that has no image -- these rules only exist once one does. */
+
+.vt-image {
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: var(--ivory-3, #efe6d9);
+  /* Fixed ratio so six cards in a grid keep their tops aligned regardless of
+     what shape the founder uploaded. object-fit crops rather than distorts --
+     a squashed photo of the house someone is working toward is worse than a
+     cropped one. */
+  aspect-ratio: 16 / 9;
+}
+.vt-image img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---- editor ---- */
+.vt-image-field { display: flex; flex-direction: column; gap: 8px; }
+.vt-field-label {
+  font-family: var(--body);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted, #556458);
+}
+
+.vt-image-drop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 84px;
+  padding: 14px;
+  border: 1.5px dashed var(--bd-2, #d8cfc2);
+  border-radius: 12px;
+  background: var(--ivory-2, #fbf7f2);
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted, #556458);
+  cursor: pointer;
+  transition: border-color .2s var(--ease), color .2s var(--ease);
+}
+.vt-image-drop:hover:not(:disabled) { border-color: var(--emerald, #10B981); color: var(--forest, #1B4332); }
+/* Disabled is the "save this vision first" state, so it has to read as an
+   explanation rather than something broken. */
+.vt-image-drop:disabled { cursor: not-allowed; opacity: .75; }
+.vt-image-drop svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+.vt-image-preview { display: flex; flex-direction: column; gap: 10px; }
+.vt-image-preview img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--bd, #e7e0d6);
+  display: block;
+}
+.vt-image-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.vt-image-remove { color: #b91c1c; }
+
+.vt-image-error {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 12.5px;
+  color: #b91c1c;
+}
+
 /* ───────── helpers used by Dashboard.jsx that have no rule in the app's CSS
    (.compass-eyebrow, .btn-row, .btn-sm). Defined here only so this standalone
    export renders the way the page is laid out. ───────── */
@@ -3257,8 +3488,8 @@ button.ac-pcard {
     <div class="topbar">
       <button class="tb-burger" id="tbBurger" type="button" aria-label="Open menu"><span></span><span></span><span></span></button>
       <div class="tb-title">
-        <div class="ey">Overview</div>
-        <h1>Good morning, Ayush</h1>
+        <div class="ey" id="tbEyebrow">Overview</div>
+        <h1 id="tbHeading">Good morning, Ayush</h1>
       </div>
       <div class="tb-right">
         <button class="tb-pill" type="button" data-nav-to="/app/billing"><span class="tb-pill-dot"></span>Ally Free</button>
@@ -3314,7 +3545,7 @@ button.ac-pcard {
         <main id="main-content" tabindex="-1" style="flex:1;overflow-y:auto;overflow-x:hidden">
 
           <!-- ═════════ DASHBOARD (Founder's Compass) ═════════ -->
-          <div class="dash-page">
+          <div class="dash-page" id="view-dashboard">
             <div class="dash-inner">
 
               <!-- Onboarding / tour banner -->
@@ -3669,6 +3900,12 @@ button.ac-pcard {
           </div>
           <!-- ═════════ /DASHBOARD ═════════ -->
 
+          <!-- ═════════ YOUR VISION (src/pages/VisionPage.jsx) ═════════
+               Six territories + the VISION / CURRENT / GAP strip. Rendered by
+               the script at the bottom of this file so the cards, the editor
+               and the gap all behave the way the page does in the app. -->
+          <div class="vis-page" id="view-vision" hidden></div>
+
         </main>
       </div>
     </div>
@@ -3740,14 +3977,29 @@ button.ac-pcard {
     '/app/frameworks': 'Frameworks', '/app/feedback': 'Send feedback', '/app/profile': 'Profile',
     '/app/help': 'Help & Support', '/app/billing': 'Plans & billing'
   };
+  /* Two pages are really in this file — the dashboard and Your Vision (the
+     north-star card links straight to it). Those switch for real; every other
+     route says where it would go, since it isn't in this export. */
+  var VIEWS = {
+    '/app': { el: '#view-dashboard', eyebrow: 'Overview', heading: 'Good morning, Ayush' },
+    '/app/vision': { el: '#view-vision', eyebrow: 'Long-term', heading: 'Your Vision' }
+  };
   function go(route) {
     var name = ROUTE_NAMES[route] || route;
     $$('.nav-item').forEach(function (n) {
       n.classList.toggle('active', n.getAttribute('data-nav') === route);
     });
     closeDrawer();
-    toast(name + ' — opens ' + route + ' in the full app');
+    var view = VIEWS[route];
+    if (!view) { toast(name + ' — opens ' + route + ' in the full app'); return; }
+    if (route === '/app/vision' && !$('#view-vision').innerHTML) window.allyRenderVision();
+    Object.keys(VIEWS).forEach(function (r) { $(VIEWS[r].el).hidden = r !== route; });
+    $('#tbEyebrow').textContent = view.eyebrow;
+    $('#tbHeading').textContent = view.heading;
+    $('#main-content').scrollTo(0, 0);
   }
+  window.allyToast = toast;
+  window.allyGo = go;
   $$('.nav-item').forEach(function (item) {
     item.addEventListener('click', function () {
       if (item.classList.contains('locked')) {
@@ -4024,6 +4276,271 @@ button.ac-pcard {
       $('#tokenBar').style.width = '60%';
     }, reduceMotion ? 0 : 120);
   });
+})();
+
+/* ─────────────────────────────────────────────────────────────────────────
+   YOUR VISION (src/pages/VisionPage.jsx + src/services/vision.js)
+
+   The dashboard's north-star card links here, so the page it links to is in
+   this file too: the six territories, the editor behind each card, and the
+   VISION / CURRENT / GAP strip. Saving writes to the in-page copy (the app
+   PUTs /vision) and feeds the dashboard's north-star rows straight back, the
+   same way the two screens share one source there.
+   ───────────────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  var ICONS = {
+    life:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M12 8v8M4 16h4a4 4 0 0 0 8 0h4"/><path d="M6 13a6 6 0 0 0 12 0"/></svg>',
+    business:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>',
+    impact:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    financial: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+    ideal_day: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    legacy:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>'
+  };
+  var ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>';
+  var ICON_EDIT = '<svg class="vt-edit-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+  var ICON_CHAT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+
+  // services/vision.js — TERRITORIES, in the order they're shown.
+  var TERRITORIES = [
+    { key: 'life', label: 'My Life', placeholder: 'What does your day-to-day actually look like?' },
+    { key: 'business', label: 'My Business', placeholder: 'What has the business become?' },
+    { key: 'impact', label: 'My Impact', placeholder: 'Who is better off because this exists?' },
+    { key: 'financial', label: 'My Financial Future', placeholder: 'What does financial freedom mean to you?' },
+    { key: 'ideal_day', label: 'My Ideal Day', placeholder: 'Walk through it, hour by hour.' },
+    { key: 'legacy', label: 'My Legacy', placeholder: 'What outlasts you?' }
+  ];
+
+  /* Sample content, consistent with the dashboard's north-star card. Two
+     territories are left blank on purpose so the empty card state — the
+     dashed border and "Add your vision" — is visible too. */
+  var vision = {
+    territories: {
+      life:      { statement: 'A four-day week I actually keep, with Fridays for thinking rather than firefighting.', tag1: '4-day week', tag2: 'Mar 2027', imageUrl: null },
+      business:  { statement: 'Build the operating system every early-stage founder in India runs their week on.', tag1: '1,000 founders', tag2: 'Dec 2026', imageUrl: null },
+      impact:    { statement: 'Founders who would have quit at month nine are still building at year three.', tag1: '500 saved runways', tag2: '2028', imageUrl: null },
+      financial: { statement: '', tag1: '', tag2: '', imageUrl: null },
+      ideal_day: { statement: 'Two deep-work blocks before noon, customer calls after lunch, nothing after 7.', tag1: '2 deep blocks', tag2: 'Starting now', imageUrl: null },
+      legacy:    { statement: '', tag1: '', tag2: '', imageUrl: null }
+    },
+    summary: { target: '₹10 Cr', current: '₹4.2 Cr', unit: 'ARR by 2028' }
+  };
+
+  // services/vision.js — computeGap(): null unless BOTH parse as numbers.
+  function computeGap(target, current) {
+    var t = parseFloat(String(target).replace(/[^\d.-]/g, ''));
+    var c = parseFloat(String(current).replace(/[^\d.-]/g, ''));
+    if (isNaN(t) || isNaN(c)) return null;
+    return t - c;
+  }
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function cardMarkup(t) {
+    var d = vision.territories[t.key];
+    var empty = !d.statement.trim();
+    return '<div class="vt-card' + (empty ? ' is-empty' : '') + '">' +
+      '<button type="button" class="vt-card-body" data-edit="' + t.key + '">' +
+        '<div class="vt-top"><span class="vt-ic">' + ICONS[t.key] + '</span>' +
+          '<span class="vt-label">' + esc(t.label.toUpperCase()) + '</span>' + (empty ? '' : ICON_EDIT) +
+        '</div>' +
+        (empty
+          ? '<p class="vt-placeholder">' + esc(t.placeholder) + '</p><span class="vt-add">' + ICON_PLUS + ' Add your vision</span>'
+          : (d.imageUrl ? '<div class="vt-image"><img src="' + d.imageUrl + '" alt="" loading="lazy"></div>' : '') +
+            '<p class="vt-statement">' + esc(d.statement) + '</p>' +
+            '<div class="vt-tags">' +
+              (d.tag1 ? '<span class="vt-tag">' + esc(d.tag1) + '</span>' : '') +
+              (d.tag2 ? '<span class="vt-tag muted">' + esc(d.tag2) + '</span>' : '') +
+            '</div>') +
+      '</button>' +
+      '<button type="button" class="vt-talk" data-talk="' + t.key + '">' + ICON_CHAT +
+        (empty ? ' Brainstorm this with Ally' : ' Talk to Ally about this') + '</button>' +
+    '</div>';
+  }
+
+  function renderVision() {
+    var page = $('#view-vision');
+    var filled = TERRITORIES.filter(function (t) { return vision.territories[t.key].statement.trim(); }).length;
+    var gap = computeGap(vision.summary.target, vision.summary.current);
+    page.innerHTML =
+      '<header class="vis-head">' +
+        '<div class="vis-kicker">Your Vision</div>' +
+        '<h1>Build the future you actually want.</h1>' +
+        '<p class="vis-sub">' + (filled === 0
+          ? 'Six territories connect what you want with a number and the milestone that proves it is becoming real.'
+          : filled + ' of ' + TERRITORIES.length + ' territories written. Keep going, or revisit one.') + '</p>' +
+        '<div class="vis-head-acts">' +
+          '<button type="button" class="btn btn-ghost" id="visAdd">' + ICON_PLUS + ' Add vision</button>' +
+          '<button type="button" class="btn btn-em" id="visTalkAll">Talk to Ally about my vision</button>' +
+        '</div>' +
+      '</header>' +
+      '<div class="vt-grid">' + TERRITORIES.map(cardMarkup).join('') + '</div>' +
+      '<section class="vis-summary">' +
+        '<div class="vis-sum-box"><span class="vis-sum-label">VISION</span>' +
+          '<input class="vis-sum-value-input" id="sumTarget" type="text" value="' + esc(vision.summary.target) + '" placeholder="e.g. ₹100Cr">' +
+          '<span class="vis-sum-sub"><input class="vis-sum-sub-input" id="sumUnit" type="text" value="' + esc(vision.summary.unit) + '" placeholder="What this is, and by when"></span>' +
+        '</div>' +
+        '<div class="vis-sum-box"><span class="vis-sum-label">CURRENT</span>' +
+          '<input class="vis-sum-value-input" id="sumCurrent" type="text" value="' + esc(vision.summary.current) + '" placeholder="e.g. ₹3.4Cr">' +
+          '<span class="vis-sum-sub">Where you are today</span>' +
+        '</div>' +
+        '<div class="vis-sum-box gap"><span class="vis-sum-label">GAP</span>' +
+          '<span class="vis-sum-value">' + (gap !== null ? gap.toLocaleString() : '—') + '</span>' +
+          '<span class="vis-sum-sub">' + (gap !== null ? 'Difference between vision and current' : 'Fill in vision + current above to see this') + '</span>' +
+        '</div>' +
+      '</section>';
+
+    $$('#view-vision [data-edit]').forEach(function (b) {
+      b.addEventListener('click', function () { openEditor(b.getAttribute('data-edit')); });
+    });
+    $$('#view-vision [data-talk]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var t = TERRITORIES.filter(function (x) { return x.key === b.getAttribute('data-talk'); })[0];
+        var d = vision.territories[t.key];
+        window.allyToast(d.statement.trim()
+          ? 'Opens Talk to Ally with: "Let’s talk through my vision for ' + t.label + ': ' + d.statement.trim() + '"'
+          : 'Opens Talk to Ally with: "I want to think through my vision for ' + t.label + ' — ' + t.placeholder + '"');
+      });
+    });
+    $('#visAdd').addEventListener('click', function () {
+      var next = TERRITORIES.filter(function (t) { return !vision.territories[t.key].statement.trim(); })[0] || TERRITORIES[0];
+      openEditor(next.key);
+    });
+    $('#visTalkAll').addEventListener('click', function () {
+      window.allyToast('Opens Talk to Ally with everything you’ve written so far');
+    });
+
+    // Same debounce the page uses before PUT /vision/summary.
+    var timer;
+    ['sumTarget', 'sumCurrent', 'sumUnit'].forEach(function (id) {
+      $('#' + id).addEventListener('input', function (e) {
+        var field = { sumTarget: 'target', sumCurrent: 'current', sumUnit: 'unit' }[id];
+        vision.summary[field] = e.target.value;
+        var g = computeGap(vision.summary.target, vision.summary.current);
+        var box = $('#view-vision .vis-sum-box.gap');
+        box.querySelector('.vis-sum-value').textContent = g !== null ? g.toLocaleString() : '—';
+        box.querySelector('.vis-sum-sub').textContent = g !== null
+          ? 'Difference between vision and current' : 'Fill in vision + current above to see this';
+        syncDashboard();
+        clearTimeout(timer);
+        timer = setTimeout(function () { window.allyToast('Vision summary saved'); }, 700);
+      });
+    });
+  }
+
+  /* The dashboard reads the same vision, so a save here has to show up there
+     — exactly what loadVision() feeding Dashboard.jsx does in the app. */
+  function syncDashboard() {
+    var business = vision.territories.business.statement.trim();
+    var first = business || (TERRITORIES.map(function (t) { return vision.territories[t.key].statement.trim(); })
+      .filter(Boolean)[0] || '');
+    var st = $('#view-dashboard .compass-statement');
+    if (first) { st.textContent = '"' + first + '"'; st.classList.remove('is-empty'); }
+    else { st.textContent = "You haven't written your vision yet."; st.classList.add('is-empty'); }
+    var rows = $$('#view-dashboard .compass-ns-row dd');
+    if (rows[0]) rows[0].textContent = vision.summary.target.trim() || 'Not set yet';
+  }
+
+  /* Territory editor — the same Modal shell, fields and rules as
+     VisionPage.jsx's TerritoryEditor (Save disabled until a statement is
+     written; a picture only after the vision itself exists). The upload is
+     read locally here rather than POSTed. */
+  var IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+  var MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+  function imageProblem(file) {
+    if (!file) return 'No file selected.';
+    if (IMAGE_TYPES.indexOf((file.type || '').toLowerCase()) === -1) return 'Use a PNG, JPEG or WEBP image.';
+    if (file.size > MAX_IMAGE_BYTES) return 'That image is too large — please pick one under 5MB.';
+    return null;
+  }
+
+  function openEditor(key) {
+    var t = TERRITORIES.filter(function (x) { return x.key === key; })[0];
+    var d = vision.territories[key];
+    var draft = { statement: d.statement, tag1: d.tag1, tag2: d.tag2, imageUrl: d.imageUrl };
+    var written = Boolean(d.statement.trim());
+    var host = $('#modalHost');
+    host.innerHTML =
+      '<div class="modal-overlay" id="vtOverlay">' +
+        '<div class="modal-panel" role="dialog" aria-modal="true" aria-label="' + esc(t.label) + '" tabindex="-1">' +
+          '<div class="modal-head"><h2 class="modal-title">' + esc(t.label) + '</h2>' +
+            '<button class="modal-x" type="button" aria-label="Close" id="vtX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>' +
+          '<div class="vt-editor">' +
+            '<label class="vt-field"><span>' + esc(t.placeholder) + '</span>' +
+              '<textarea class="modal-textarea" id="vtStatement" rows="3" placeholder="Write it the way you\'d actually say it — specific, in your own words.">' + esc(draft.statement) + '</textarea></label>' +
+            '<div class="vt-field-row">' +
+              '<label class="vt-field"><span>A number that proves it</span><input type="text" id="vtTag1" value="' + esc(draft.tag1) + '" placeholder="e.g. 4-day week"></label>' +
+              '<label class="vt-field"><span>A milestone / date</span><input type="text" id="vtTag2" value="' + esc(draft.tag2) + '" placeholder="e.g. Mar 2027"></label>' +
+            '</div>' +
+            '<div class="vt-image-field"><span class="vt-field-label">Picture (optional)</span><div id="vtImageSlot"></div>' +
+              '<input type="file" id="vtFile" accept="' + IMAGE_TYPES.join(',') + '" hidden>' +
+              '<p class="vt-image-error" id="vtImageError" hidden></p>' +
+            '</div>' +
+            '<div class="vt-editor-actions">' +
+              '<button type="button" class="btn btn-ghost" id="vtCancel">Cancel</button>' +
+              '<button type="button" class="btn btn-em" id="vtSave"' + (draft.statement.trim() ? '' : ' disabled') + '>Save</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.style.overflow = 'hidden';
+    $('#modalHost .modal-panel').focus();
+
+    function paintImage() {
+      $('#vtImageSlot').innerHTML = draft.imageUrl
+        ? '<div class="vt-image-preview"><img src="' + draft.imageUrl + '" alt="">' +
+          '<div class="vt-image-buttons"><button type="button" class="btn btn-ghost btn-sm" id="vtReplace">Replace</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm vt-image-remove" id="vtRemove">Remove</button></div></div>'
+        : '<button type="button" class="vt-image-drop" id="vtAddImage"' + (written ? '' : ' disabled') + '>' + ICON_PLUS +
+          (written ? 'Add a picture' : 'Save this vision first, then add a picture') + '</button>';
+      var add = $('#vtAddImage') || $('#vtReplace');
+      if (add) add.addEventListener('click', function () { $('#vtFile').click(); });
+      var rm = $('#vtRemove');
+      if (rm) rm.addEventListener('click', function () { draft.imageUrl = null; paintImage(); });
+    }
+    paintImage();
+
+    $('#vtFile').addEventListener('change', function (e) {
+      var file = e.target.files && e.target.files[0];
+      var err = $('#vtImageError');
+      var problem = imageProblem(file);
+      if (problem) { err.textContent = problem; err.hidden = false; e.target.value = ''; return; }
+      err.hidden = true;
+      var reader = new FileReader();
+      reader.onload = function () { draft.imageUrl = reader.result; paintImage(); };
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    });
+    $('#vtStatement').addEventListener('input', function (e) {
+      draft.statement = e.target.value;
+      $('#vtSave').disabled = !draft.statement.trim();
+    });
+    $('#vtTag1').addEventListener('input', function (e) { draft.tag1 = e.target.value; });
+    $('#vtTag2').addEventListener('input', function (e) { draft.tag2 = e.target.value; });
+
+    function close() { host.innerHTML = ''; document.body.style.overflow = ''; }
+    $('#vtX').addEventListener('click', close);
+    $('#vtCancel').addEventListener('click', close);
+    $('#vtOverlay').addEventListener('mousedown', function (e) { if (e.target === e.currentTarget) close(); });
+    $('#vtSave').addEventListener('click', function () {
+      vision.territories[key] = {
+        statement: draft.statement.trim(), tag1: draft.tag1.trim(),
+        tag2: draft.tag2.trim(), imageUrl: draft.imageUrl
+      };
+      close();
+      renderVision();
+      syncDashboard();
+      window.allyToast('Saved to your vision');
+    });
+  }
+
+  window.allyRenderVision = renderVision;
 })();
 </script>
 </body>
